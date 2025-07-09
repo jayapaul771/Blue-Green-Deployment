@@ -6,51 +6,51 @@ resource "aws_vpc" "yogesh_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "yogesh-vpc"
+    Name = "paul-vpc"
   }
 }
 
-resource "aws_subnet" "yogesh_subnet" {
+resource "aws_subnet" "paul_subnet" {
   count = 2
-  vpc_id                  = aws_vpc.yogesh_vpc.id
-  cidr_block              = cidrsubnet(aws_vpc.yogesh_vpc.cidr_block, 8, count.index)
+  vpc_id                  = aws_vpc.paul_vpc.id
+  cidr_block              = cidrsubnet(aws_vpc.paul_vpc.cidr_block, 8, count.index)
   availability_zone       = element(["ap-south-1a", "ap-south-1b"], count.index)
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "yogesh-subnet-${count.index}"
+    Name = "paul-subnet-${count.index}"
   }
 }
 
-resource "aws_internet_gateway" "yogesh_igw" {
-  vpc_id = aws_vpc.yogesh_vpc.id
+resource "aws_internet_gateway" "paul_igw" {
+  vpc_id = aws_vpc.paul_vpc.id
 
   tags = {
-    Name = "yogesh-igw"
+    Name = "paul-igw"
   }
 }
 
-resource "aws_route_table" "yogesh_route_table" {
-  vpc_id = aws_vpc.yogesh_vpc.id
+resource "aws_route_table" "paul_route_table" {
+  vpc_id = aws_vpc.paul_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.yogesh_igw.id
+    gateway_id = aws_internet_gateway.paul_igw.id
   }
 
   tags = {
-    Name = "yogesh-route-table"
+    Name = "paul-route-table"
   }
 }
 
 resource "aws_route_table_association" "a" {
   count          = 2
-  subnet_id      = aws_subnet.yogesh_subnet[count.index].id
-  route_table_id = aws_route_table.yogesh_route_table.id
+  subnet_id      = aws_subnet.paul_subnet[count.index].id
+  route_table_id = aws_route_table.paul_route_table.id
 }
 
-resource "aws_security_group" "yogesh_cluster_sg" {
-  vpc_id = aws_vpc.yogesh_vpc.id
+resource "aws_security_group" "paul_cluster_sg" {
+  vpc_id = aws_vpc.paul_vpc.id
 
   egress {
     from_port   = 0
@@ -60,12 +60,12 @@ resource "aws_security_group" "yogesh_cluster_sg" {
   }
 
   tags = {
-    Name = "yogesh-cluster-sg"
+    Name = "paul-cluster-sg"
   }
 }
 
-resource "aws_security_group" "yogesh_node_sg" {
-  vpc_id = aws_vpc.yogesh_vpc.id
+resource "aws_security_group" "paul_node_sg" {
+  vpc_id = aws_vpc.paul_vpc.id
 
   ingress {
     from_port   = 0
@@ -82,25 +82,25 @@ resource "aws_security_group" "yogesh_node_sg" {
   }
 
   tags = {
-    Name = "yogesh-node-sg"
+    Name = "paul-node-sg"
   }
 }
 
-resource "aws_eks_cluster" "yogesh" {
-  name     = "yogesh-cluster"
-  role_arn = aws_iam_role.yogesh_cluster_role.arn
+resource "aws_eks_cluster" "paul" {
+  name     = "paul-cluster"
+  role_arn = aws_iam_role.paul_cluster_role.arn
 
   vpc_config {
-    subnet_ids         = aws_subnet.yogesh_subnet[*].id
-    security_group_ids = [aws_security_group.yogesh_cluster_sg.id]
+    subnet_ids         = aws_subnet.paul_subnet[*].id
+    security_group_ids = [aws_security_group.paul_cluster_sg.id]
   }
 }
 
-resource "aws_eks_node_group" "yogesh" {
-  cluster_name    = aws_eks_cluster.yogesh.name
-  node_group_name = "yogesh-node-group"
-  node_role_arn   = aws_iam_role.yogesh_node_group_role.arn
-  subnet_ids      = aws_subnet.yogesh_subnet[*].id
+resource "aws_eks_node_group" "paul" {
+  cluster_name    = aws_eks_cluster.paul.name
+  node_group_name = "paul-node-group"
+  node_role_arn   = aws_iam_role.paul_node_group_role.arn
+  subnet_ids      = aws_subnet.paul_subnet[*].id
 
   scaling_config {
     desired_size = 3
@@ -112,12 +112,12 @@ resource "aws_eks_node_group" "yogesh" {
 
   remote_access {
     ec2_ssh_key = var.ssh_key_name
-    source_security_group_ids = [aws_security_group.yogesh_node_sg.id]
+    source_security_group_ids = [aws_security_group.paul_node_sg.id]
   }
 }
 
-resource "aws_iam_role" "yogesh_cluster_role" {
-  name = "yogesh-cluster-role"
+resource "aws_iam_role" "paul_cluster_role" {
+  name = "paul-cluster-role"
 
   assume_role_policy = <<EOF
 {
@@ -135,13 +135,13 @@ resource "aws_iam_role" "yogesh_cluster_role" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "yogesh_cluster_role_policy" {
-  role       = aws_iam_role.yogesh_cluster_role.name
+resource "aws_iam_role_policy_attachment" "paul_cluster_role_policy" {
+  role       = aws_iam_role.paul_cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-resource "aws_iam_role" "yogesh_node_group_role" {
-  name = "yogesh-node-group-role"
+resource "aws_iam_role" "paul_node_group_role" {
+  name = "paul-node-group-role"
 
   assume_role_policy = <<EOF
 {
@@ -159,17 +159,17 @@ resource "aws_iam_role" "yogesh_node_group_role" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "yogesh_node_group_role_policy" {
-  role       = aws_iam_role.yogesh_node_group_role.name
+resource "aws_iam_role_policy_attachment" "paul_node_group_role_policy" {
+  role       = aws_iam_role.paul_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
-resource "aws_iam_role_policy_attachment" "yogesh_node_group_cni_policy" {
-  role       = aws_iam_role.yogesh_node_group_role.name
+resource "aws_iam_role_policy_attachment" "paul_node_group_cni_policy" {
+  role       = aws_iam_role.paul_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
-resource "aws_iam_role_policy_attachment" "yogesh_node_group_registry_policy" {
-  role       = aws_iam_role.yogesh_node_group_role.name
+resource "aws_iam_role_policy_attachment" "paul_node_group_registry_policy" {
+  role       = aws_iam_role.paul_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
